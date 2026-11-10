@@ -992,38 +992,263 @@
             let submittedPeriodUpper = Math.round(totalIncomePeriod * 0.3);
             let submittedYTDUpper = Math.round(totalIncomeYTD * 0.3);
 
-            const reportHtml = `
+          const reportHtml = `
                 <div class="text-black">
                     <div class="flex justify-between items-start mb-2 text-sm">
                         <div>
                             <div>Đơn vị báo cáo: <span class="font-bold uppercase editable-cell" contenteditable="true">${config.unitName}</span></div>
                             <div>Đơn vị nhận báo cáo: <span class="font-bold editable-cell" contenteditable="true">${config.receiverReport}</span></div>
                         </div>
-                        <div class="text-center font-bold uppercase text-sm">ĐẢNG CỘNG SẢN VIỆT NAM</div>
+                        <div class="text-center font-bold uppercase text-sm">
+                            ĐẢNG CỘNG SẢN VIỆT NAM
+                        </div>
                     </div>
-                    <div class="text-center my-4"><h2 class="text-xl font-bold uppercase tracking-wide">BÁO CÁO THU, NỘP ĐẢNG PHÍ</h2><p class="italic text-sm mt-0.5 editable-cell inline-block" contenteditable="true">${periodText}</p></div>
+
+                    <div class="text-center my-4">
+                        <h2 class="text-xl font-bold uppercase tracking-wide">BÁO CÁO THU, NỘP ĐẢNG PHÍ</h2>
+                        <p class="italic text-sm mt-0.5 editable-cell inline-block" contenteditable="true">${periodText}</p>
+                    </div>
+
                     <table class="w-full report-table text-left border-collapse border border-black my-4">
                         <thead>
                             <tr class="text-center font-bold bg-gray-50">
-                                <th rowspan="2" class="w-10">TT</th><th rowspan="2" class="w-72">Chỉ tiêu</th><th rowspan="2" class="w-16">Đơn vị</th><th rowspan="2" class="w-16">Mã số</th>
-                                <th>Đảng bộ Xã phường thị trấn</th><th>Đảng bộ Doanh nghiệp</th><th>Đảng bộ khác</th><th>Cộng</th><th rowspan="2" class="w-16">Ghi chú</th>
+                                <th rowspan="2" class="w-10">TT</th>
+                                <th rowspan="2" class="w-72">Chỉ tiêu</th>
+                                <th rowspan="2" class="w-16">Đơn vị</th>
+                                <th rowspan="2" class="w-16">Mã số</th>
+                                <th>Đảng bộ Xã phường thị trấn</th>
+                                <th>Đảng bộ Doanh nghiệp</th>
+                                <th>Đảng bộ khác</th>
+                                <th>Cộng</th>
+                                <th rowspan="2" class="w-16">Ghi chú</th>
                             </tr>
-                            <tr class="text-center font-bold bg-gray-50"><th class="w-16">1</th><th class="w-16">2</th><th class="w-16">3</th><th class="w-24">4=1+2+3</th></tr>
+                            <tr class="text-center font-bold bg-gray-50">
+                                <th class="w-16">1</th>
+                                <th class="w-16">2</th>
+                                <th class="w-16">3</th>
+                                <th class="w-24">4=1+2+3</th>
+                            </tr>
+                            <tr class="text-center text-xs font-bold bg-gray-100">
+                                <td>A</td>
+                                <td>B</td>
+                                <td>C</td>
+                                <td>D</td>
+                                <td>1</td>
+                                <td>2</td>
+                                <td>3</td>
+                                <td>4</td>
+                                <td>E</td>
+                            </tr>
                         </thead>
                         <tbody>
-                            <tr class="font-bold"><td class="text-center">I</td><td>Tổng số đảng viên đến cuối kỳ báo cáo</td><td class="text-center font-normal">Người</td><td class="text-center">01</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">${totalMembers}</td><td class="text-center editable-cell" contenteditable="true">${totalMembers}</td><td></td></tr>
-                            <tr class="font-bold"><td class="text-center">II</td><td>Đảng phí đã thu được từ chi bộ của cấp báo cáo</td><td class="text-center font-normal">Đồng</td><td></td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td><td></td></tr>
-                            <tr><td class="text-center font-bold">1</td><td>Kỳ báo cáo</td><td class="text-center">Đồng</td><td class="text-center">02</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td><td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td><td></td></tr>
-                            <tr><td class="text-center font-bold">2</td><td>Từ đầu năm đến cuối kỳ báo cáo</td><td class="text-center">Đồng</td><td class="text-center">03</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomeYTD)}</td><td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(totalIncomeYTD)}</td><td></td></tr>
-                            <tr class="font-bold"><td class="text-center">III</td><td>Đảng phí trích giữ lại ở các cấp (70%)</td><td class="text-center font-normal">Đồng</td><td></td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td><td></td></tr>
-                            <tr class="font-bold"><td class="text-center">IV</td><td>Đảng phí nộp cấp trên của cấp báo cáo (30%)</td><td class="text-center font-normal">Đồng</td><td></td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(submittedPeriodUpper)}</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(submittedPeriodUpper)}</td><td></td></tr>
+                            <tr class="font-bold">
+                                <td class="text-center">I</td>
+                                <td>Tổng số đảng viên đến cuối kỳ báo cáo</td>
+                                <td class="text-center font-normal">Người</td>
+                                <td class="text-center">01</td>
+                                <td class="text-center font-normal editable-cell" contenteditable="true">0</td>
+                                <td class="text-center font-normal editable-cell" contenteditable="true">0</td>
+                                <td class="text-center font-normal editable-cell" contenteditable="true">${totalMembers}</td>
+                                <td class="text-center editable-cell" contenteditable="true">${totalMembers}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr class="font-bold">
+                                <td class="text-center">II</td>
+                                <td>Đảng phí đã thu được từ chi bộ của cấp báo cáo</td>
+                                <td class="text-center font-normal">Đồng</td>
+                                <td></td>
+                                <td class="text-center font-normal editable-cell" contenteditable="true">0</td>
+                                <td class="text-center font-normal editable-cell" contenteditable="true">0</td>
+                                <td class="text-right font-normal editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center font-bold">1</td>
+                                <td>Kỳ báo cáo</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">02</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td>
+                                <td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center font-bold">2</td>
+                                <td>Từ đầu năm đến cuối kỳ báo cáo</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">03</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomeYTD)}</td>
+                                <td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(totalIncomeYTD)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr class="font-bold">
+                                <td class="text-center">III</td>
+                                <td>Đảng phí trích giữ lại ở các cấp</td>
+                                <td class="text-center font-normal">Đồng</td>
+                                <td></td>
+                                <td class="text-center font-normal editable-cell" contenteditable="true">0</td>
+                                <td class="text-center font-normal editable-cell" contenteditable="true">0</td>
+                                <td class="text-right font-normal editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center font-bold">1</td>
+                                <td>Kỳ báo cáo (05+06+07)</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">04</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td>
+                                <td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">1.1</td>
+                                <td class="pl-6">Chi bộ, đảng bộ bộ phận (70%)</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">05</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td>
+                                <td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">1.2</td>
+                                <td class="pl-6">Tổ chức cơ sở đảng</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">06</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">1.3</td>
+                                <td class="pl-6">Cấp trên cơ sở</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">07</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center font-bold">2</td>
+                                <td>Từ đầu năm đến cuối kỳ báo cáo (09+10+11)</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">08</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(keptYTDBranch)}</td>
+                                <td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(keptYTDBranch)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">2.1</td>
+                                <td class="pl-6">Chi bộ, đảng bộ bộ phận</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">09</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(keptYTDBranch)}</td>
+                                <td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(keptYTDBranch)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">2.2</td>
+                                <td class="pl-6">Tổ chức cơ sở đảng</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">10</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">2.3</td>
+                                <td class="pl-6">Cấp trên cơ sở</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">11</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr class="font-bold">
+                                <td class="text-center">IV</td>
+                                <td>Đảng phí nộp cấp trên của cấp báo cáo (30%)</td>
+                                <td class="text-center font-normal">Đồng</td>
+                                <td></td>
+                                <td class="text-center font-normal editable-cell" contenteditable="true">0</td>
+                                <td class="text-center font-normal editable-cell" contenteditable="true">0</td>
+                                <td class="text-right font-normal editable-cell" contenteditable="true">${formatMoney(submittedPeriodUpper)}</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(submittedPeriodUpper)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center font-bold">1</td>
+                                <td>Số phải nộp kỳ báo cáo (02-04)</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">12</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(submittedPeriodUpper)}</td>
+                                <td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(submittedPeriodUpper)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center font-bold">2</td>
+                                <td>Từ đầu năm đến cuối kỳ báo cáo (03-08)</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">13</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-right editable-cell" contenteditable="true">${formatMoney(submittedYTDUpper)}</td>
+                                <td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(submittedYTDUpper)}</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center font-bold">3</td>
+                                <td>Số nợ còn chưa nộp cấp trên đến cuối kỳ báo cáo</td>
+                                <td class="text-center">Đồng</td>
+                                <td class="text-center">14</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center editable-cell" contenteditable="true">0</td>
+                                <td class="text-center font-bold editable-cell" contenteditable="true">0</td>
+                                <td class="editable-cell" contenteditable="true"></td>
+                            </tr>
                         </tbody>
                     </table>
+
                     <div class="flex justify-between items-start mt-8 pt-2">
-                        <div class="text-center w-64"><div class="font-bold">Người lập</div><div class="italic text-xs">(Ký, họ tên)</div><div class="h-20"></div><div class="font-bold uppercase editable-cell" contenteditable="true">${config.treasurer}</div></div>
-                        <div class="text-center w-64"><div class="italic text-xs mb-1 editable-cell" contenteditable="true">${config.location}, ngày 05 tháng ${m} năm ${y}</div><div class="font-bold">T/M Cấp ủy</div><div class="italic text-xs">(Ký, họ tên)</div><div class="h-20"></div><div class="font-bold uppercase editable-cell" contenteditable="true">${config.secretary}</div></div>
+                        <div class="text-center w-64">
+                            <div class="font-bold">Người lập</div>
+                            <div class="italic text-xs">(Ký, họ tên)</div>
+                            <div class="h-20"></div>
+                            <div class="font-bold uppercase editable-cell" contenteditable="true">${config.treasurer}</div>
+                        </div>
+                        <div class="text-center w-64">
+                            <div class="italic text-xs mb-1 editable-cell" contenteditable="true">${config.location}, ngày 05 tháng ${m} năm ${y}</div>
+                            <div class="font-bold">T/M Cấp ủy</div>
+                            <div class="italic text-xs">(Ký, họ tên)</div>
+                            <div class="h-20"></div>
+                            <div class="font-bold uppercase editable-cell" contenteditable="true">${config.secretary}</div>
+                        </div>
                     </div>
-                </div>`;
+                </div>
+            `;
+
             document.getElementById('standard-report-preview-area').innerHTML = reportHtml;
         }
 
