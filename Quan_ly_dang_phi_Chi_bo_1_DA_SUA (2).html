@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Thu - Chi - Tồn Đảng Phí & Báo Cáo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        party: {
+                            red: '#da251d',
+                            yellow: '#ffde00',
+                            dark: '#990000',
+                            gold: '#d4af37'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .font-report { font-family: 'Times New Roman', Times, serif; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-section, #print-section * { visibility: visible; }
+            #print-section { position: absolute; left: 0; top: 0; width: 100%; background: white !important; color: black !important; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            .page-break { page-break-before: always; break-before: page; }
+            @page { size: A4 portrait; margin: 10mm; }
+        }
+        .report-table th, .report-table td { border: 1px solid #000; padding: 4px 6px; font-size: 13px; }
+        .editable-cell { background-color: #fefce8; outline: 1px dashed #ca8a04; cursor: pointer; }
+        .editable-cell:focus { background-color: #ffffff; outline: 2px solid #da251d; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header Navigation (No Print) -->
+    <header class="bg-party-red text-white shadow-lg no-print sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap items-center justify-between py-3 gap-3">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-star text-party-yellow text-2xl animate-pulse"></i>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight uppercase tracking-wide">QUẢN LÝ ĐẢNG PHÍ CHI BỘ</h1>
+                        <p class="text-xs text-yellow-200" id="header-unit-display">ĐẢNG ỦY PHƯỜNG QUY NHƠN TÂY - CHI BỘ 1</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <!-- NÚT MỚI: NẠP DỮ LIỆU TỪ GOOGLE SHEET VỀ WEBAPP -->
+                    <button onclick="fetchDataFromGoogleSheet()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-2 rounded-lg text-sm shadow-md transition flex items-center border border-blue-400">
+                        <i class="fa-solid fa-cloud-arrow-down mr-1.5 text-base"></i> NẠP DATA TỪ GOOGLE SHEET
+                    </button>
+                    <button onclick="downloadSelfHtmlFile()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-sm shadow-md transition flex items-center border border-emerald-400">
+                        <i class="fa-solid fa-download mr-1.5 text-base"></i> TẢI WEBAPP (.HTML)
+                    </button>
+                    <button onclick="openSettingsModal()" class="px-3 py-2 rounded-lg text-sm font-medium bg-red-900 hover:bg-black transition">
+                        <i class="fa-solid fa-gear mr-1"></i> Cài Đặt
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Tabs -->
+            <div class="flex space-x-1 border-t border-red-700 pt-2 overflow-x-auto">
+                <button onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 rounded-t-lg text-sm font-semibold hover:bg-red-800 transition active-tab bg-white text-party-red" id="btn-tab-dashboard">
+                    <i class="fa-solid fa-chart-line mr-1.5"></i> 1. Tổng Quan & Nhập Liệu
+                </button>
+                <button onclick="switchTab('transactions')" class="tab-btn px-4 py-2 rounded-t-lg text-sm font-semibold hover:bg-red-800 transition text-white" id="btn-tab-transactions">
+                    <i class="fa-solid fa-list-check mr-1.5"></i> 2. Danh Sách Phiếu
+                </button>
+                <button onclick="switchTab('reports-standard')" class="tab-btn px-4 py-2 rounded-t-lg text-sm font-semibold hover:bg-red-800 transition text-white" id="btn-tab-reports-standard">
+                    <i class="fa-solid fa-file-invoice-dollar mr-1.5"></i> 3. Báo Cáo Mẫu (Ảnh 1)
+                </button>
+                <button onclick="switchTab('reports-detail')" class="tab-btn px-4 py-2 rounded-t-lg text-sm font-semibold hover:bg-red-800 transition text-white" id="btn-tab-reports-detail">
+                    <i class="fa-solid fa-file-lines mr-1.5"></i> 4. Báo Cáo Chi Tiết Thu-Chi-Tồn
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 no-print">
+
+        <!-- TAB 1: DASHBOARD OVERVIEW & QUICK ACTIONS -->
+        <div id="tab-dashboard" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-blue-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Tồn Đầu Kỳ / Chuyển Sang</p>
+                        <h3 class="text-xl font-bold text-gray-800 mt-1" id="stat-initial">0 VNĐ</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-500"><i class="fa-solid fa-wallet text-xl"></i></div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-emerald-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Tổng Thu Trong Kỳ</p>
+                        <h3 class="text-xl font-bold text-emerald-600 mt-1" id="stat-income">0 VNĐ</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500"><i class="fa-solid fa-arrow-down-left text-xl"></i></div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-red-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Tổng Chi Trong Kỳ</p>
+                        <h3 class="text-xl font-bold text-red-600 mt-1" id="stat-expense">0 VNĐ</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-red-500"><i class="fa-solid fa-arrow-up-right text-xl"></i></div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-party-gold flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Tồn Quỹ Hiện Tại</p>
+                        <h3 class="text-2xl font-black text-amber-600 mt-1" id="stat-balance">0 VNĐ</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center text-amber-500"><i class="fa-solid fa-vault text-xl"></i></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 space-y-3">
+                <div class="flex items-center justify-between border-b pb-3">
+                    <span class="text-base font-bold text-gray-800"><i class="fa-solid fa-pen-to-square text-party-red mr-2"></i> Tự Tạo & Nhập Phiếu Mới Nhanh:</span>
+                    <span class="text-xs text-gray-500">Tự động quy đổi số tiền thành chữ tiếng Việt & đồng bộ 2 chiều Google Sheet</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <button onclick="openTransactionModal('INCOME')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold p-3 rounded-lg text-sm transition shadow flex items-center justify-center">
+                        <i class="fa-solid fa-plus-circle mr-2 text-lg"></i> Tạo Phiếu Thu (Mẫu 2)
+                    </button>
+                    <button onclick="openTransactionModal('EXPENSE')" class="bg-red-600 hover:bg-red-700 text-white font-semibold p-3 rounded-lg text-sm transition shadow flex items-center justify-center">
+                        <i class="fa-solid fa-minus-circle mr-2 text-lg"></i> Tạo Phiếu Chi (Có Đính Kèm Ảnh)
+                    </button>
+                    <button onclick="openTransactionModal('RECEIPT')" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold p-3 rounded-lg text-sm transition shadow flex items-center justify-center">
+                        <i class="fa-solid fa-receipt mr-2 text-lg"></i> Tạo Biên Nhận (Mẫu 3)
+                    </button>
+                    <button onclick="openTransactionModal('INITIAL')" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded-lg text-sm transition shadow flex items-center justify-center">
+                        <i class="fa-solid fa-box-archive mr-2 text-lg"></i> Nhập Tồn Ban Đầu
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="font-bold text-gray-800 text-base flex items-center">
+                        <i class="fa-solid fa-clock-rotate-left mr-2 text-party-red"></i> Giao Dịch Gần Đây
+                    </h2>
+                    <button onclick="switchTab('transactions')" class="text-sm font-medium text-party-red hover:underline">Xem tất cả phiếu <i class="fa-solid fa-angle-right ml-1"></i></button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-600">
+                        <thead class="bg-gray-50 text-gray-700 uppercase text-xs font-semibold">
+                            <tr>
+                                <th class="px-4 py-3">Số CT</th>
+                                <th class="px-4 py-3">Ngày</th>
+                                <th class="px-4 py-3">Loại Phiếu</th>
+                                <th class="px-4 py-3">Họ và Tên</th>
+                                <th class="px-4 py-3">Nội Dung</th>
+                                <th class="px-4 py-3 text-right">Số Tiền</th>
+                                <th class="px-4 py-3 text-center">Chứng Từ Ảnh</th>
+                                <th class="px-4 py-3 text-center">In Phiếu Mẫu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-recent-table" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: TRANSACTION MANAGEMENT -->
+        <div id="tab-transactions" class="tab-content hidden space-y-5">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="search-input" onkeyup="filterTransactions()" placeholder="Tìm tên, nội dung, số CT..." class="pl-9 pr-3 py-2 w-full border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+                    </div>
+                    <select id="filter-type" onchange="filterTransactions()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+                        <option value="ALL">-- Tất cả loại phiếu --</option>
+                        <option value="INCOME">Phiếu Thu</option>
+                        <option value="EXPENSE">Phiếu Chi</option>
+                        <option value="RECEIPT">Giấy Biên Nhận Tiền</option>
+                        <option value="INITIAL">Tồn Đầu / Chuyển Sang</option>
+                    </select>
+                    <input type="month" id="filter-month" onchange="filterTransactions()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="fetchDataFromGoogleSheet()" class="px-3 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium flex items-center">
+                        <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Nạp Dữ Liệu Từ Sheet
+                    </button>
+                    <button onclick="resetFilters()" class="px-3 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Xóa Lọc
+                    </button>
+                    <button onclick="openTransactionModal('INCOME')" class="bg-party-red hover:bg-red-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition shadow-sm">
+                        <i class="fa-solid fa-plus mr-1"></i> Tạo Phiếu Mới
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-600">
+                        <thead class="bg-gray-100 text-gray-700 uppercase text-xs font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="px-4 py-3">STT</th>
+                                <th class="px-4 py-3">Số CT</th>
+                                <th class="px-4 py-3">Ngày Lập</th>
+                                <th class="px-4 py-3">Loại Phiếu</th>
+                                <th class="px-4 py-3">Người Giao Dịch</th>
+                                <th class="px-4 py-3">Địa Chỉ / Đơn Vị</th>
+                                <th class="px-4 py-3 max-w-xs">Nội Dung Chi Tiết</th>
+                                <th class="px-4 py-3 text-right">Số Tiền (Đồng)</th>
+                                <th class="px-4 py-3 text-center">Ảnh Gốc</th>
+                                <th class="px-4 py-3 text-center">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="full-transactions-table" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: STANDARD REPORT -->
+        <div id="tab-reports-standard" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center"><i class="fa-solid fa-table-cells text-party-red mr-2"></i> Báo Cáo Thu, Nộp Đảng Phí (Mẫu Ảnh 1)</h2>
+                </div>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <input type="month" id="report-period-month" value="2026-08" onchange="updateStandardReportView()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold">
+                    <button onclick="updateStandardReportView()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3 py-2 rounded-lg text-sm transition"><i class="fa-solid fa-rotate mr-1"></i> Nạp Tự Động</button>
+                    <button onclick="printStandardReport()" class="bg-party-red hover:bg-red-800 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-md flex items-center transition"><i class="fa-solid fa-print mr-2"></i> Print In Báo Cáo Mẫu (A4)</button>
+                </div>
+            </div>
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
+                <div id="standard-report-preview-area" class="max-w-[210mm] mx-auto font-report bg-white text-black p-4"></div>
+            </div>
+        </div>
+
+        <!-- TAB 4: DETAILED REPORT -->
+        <div id="tab-reports-detail" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center"><i class="fa-solid fa-file-invoice text-blue-600 mr-2"></i> Báo Cáo Chi Tiết Sổ Thu - Chi - Tồn Quỹ</h2>
+                </div>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <input type="date" id="detail-from-date" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+                    <input type="date" id="detail-to-date" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+                    <button onclick="updateDetailedReportView()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-2 rounded-lg text-sm transition"><i class="fa-solid fa-filter mr-1"></i> Xem Báo Cáo</button>
+                    <button onclick="printDetailedReport()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-md flex items-center transition"><i class="fa-solid fa-print mr-2"></i> Print In Báo Cáo Chi Tiết</button>
+                </div>
+            </div>
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
+                <div id="detailed-report-preview-area" class="max-w-[210mm] mx-auto font-report bg-white text-black p-4"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="print-section" class="font-report"></div>
+
+    <!-- MODAL TRANSACTION -->
+    <div id="modal-transaction" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden no-print">
+        <div class="bg-white rounded-xl shadow-2xl max-w-xl w-full mx-4 overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
+            <div class="bg-party-red px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="font-bold text-lg" id="modal-title">Thêm Giao Dịch Mới</h3>
+                <button onclick="closeTransactionModal()" class="text-white hover:text-yellow-200 text-xl font-bold">&times;</button>
+            </div>
+            <form id="form-transaction" onsubmit="saveTransaction(event)" class="p-6 space-y-4 overflow-y-auto flex-grow">
+                <input type="hidden" id="tx-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Loại Chứng Từ *</label>
+                        <select id="tx-type" onchange="onTypeChange()" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm" required>
+                            <option value="INCOME">Phiếu Thu (Đảng phí)</option>
+                            <option value="EXPENSE">Phiếu Chi (Trích nộp/Chi)</option>
+                            <option value="RECEIPT">Giấy Biên Nhận Tiền</option>
+                            <option value="INITIAL">Tồn Quỹ Ban Đầu/Chuyển Sang</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Số Chứng Từ</label>
+                        <input type="text" id="tx-voucher-no" placeholder="VD: 05" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Ngày Chứng Từ *</label>
+                        <input type="date" id="tx-date" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Số Tiền (VNĐ) *</label>
+                        <input type="number" id="tx-amount" oninput="updateWordsPreview()" min="0" step="1000" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold text-red-600" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1" id="lbl-person">Họ Tên Người Nộp / Chi / Nhận *</label>
+                    <input type="text" id="tx-person" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Địa Chỉ / Đơn Vị</label>
+                    <input type="text" id="tx-address" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Nội Dung / Lý Do *</label>
+                    <textarea id="tx-reason" rows="2" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm" required></textarea>
+                </div>
+
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                    <label class="block text-xs font-bold text-gray-700 uppercase"><i class="fa-solid fa-camera mr-1 text-party-red"></i> Đính Kèm Ảnh Chứng Từ (Phiếu Chi: Trang 2 khi in)</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input type="file" id="tx-file-input" accept="image/*" onchange="handleImageUpload(event)" class="w-full text-xs text-gray-500">
+                        <input type="text" id="tx-image-url" placeholder="Dán Link URL ảnh..." class="w-full border border-gray-300 rounded-lg p-2 text-xs">
+                    </div>
+                    <input type="hidden" id="tx-image-base64">
+                    <div id="image-preview-container" class="hidden mt-2 flex items-center space-x-3 bg-white p-2 rounded border">
+                        <img id="image-preview-thumb" src="" alt="Thumbnail" class="w-16 h-16 object-cover rounded border">
+                        <div>
+                            <p class="text-xs font-semibold text-emerald-600">Đã đính kèm ảnh!</p>
+                            <button type="button" onclick="clearAttachedImage()" class="text-xs text-red-600 hover:underline">Xóa ảnh</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <span class="text-xs font-semibold text-amber-800 uppercase block">Số Tiền Tự Động Đổi Thành Chữ:</span>
+                    <p id="tx-words-preview" class="text-sm font-serif italic text-amber-900 mt-1 font-bold">Không đồng</p>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t">
+                    <button type="button" onclick="closeTransactionModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm">Hủy</button>
+                    <button type="submit" class="px-5 py-2 bg-party-red text-white font-medium rounded-lg text-sm hover:bg-red-800">Lưu Giao Dịch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PRINT -->
+    <div id="modal-voucher-print" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden no-print">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-print mr-2"></i> Xem & In Phiếu</h3>
+                <button onclick="closeVoucherModal()" class="text-white text-xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow bg-gray-100 flex flex-col items-center space-y-8">
+                <div id="voucher-preview-card" class="bg-white p-10 shadow-md w-full max-w-[210mm] font-report border border-gray-300 text-black"></div>
+            </div>
+            <div class="bg-white px-6 py-4 border-t flex justify-end space-x-3">
+                <button onclick="closeVoucherModal()" class="px-4 py-2 border text-gray-700 rounded-lg text-sm">Đóng</button>
+                <button onclick="printVoucherDocument()" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg text-sm flex items-center"><i class="fa-solid fa-print mr-2"></i> In Phiếu Này</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SETTINGS -->
+    <div id="modal-settings" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden no-print">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
+            <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-gear mr-2"></i> Cài Đặt Thông Tin</h3>
+                <button onclick="closeSettingsModal()" class="text-white text-xl font-bold">&times;</button>
+            </div>
+            <form id="form-settings" onsubmit="saveSettings(event)" class="p-6 space-y-4">
+                <div><label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Tên Đơn Vị Cấp Trên</label><input type="text" id="cfg-upper-org" class="w-full border rounded-lg p-2.5 text-sm" required></div>
+                <div><label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Tên Chi Bộ</label><input type="text" id="cfg-unit-name" class="w-full border rounded-lg p-2.5 text-sm" required></div>
+                <div><label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Địa Danh</label><input type="text" id="cfg-location" class="w-full border rounded-lg p-2.5 text-sm" required></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Bí Thư</label><input type="text" id="cfg-secretary" class="w-full border rounded-lg p-2.5 text-sm" required></div>
+                    <div><label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Thủ Quỹ</label><input type="text" id="cfg-treasurer" class="w-full border rounded-lg p-2.5 text-sm" required></div>
+                </div>
+                <div><label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Đơn vị nhận báo cáo</label><input type="text" id="cfg-receiver-report" class="w-full border rounded-lg p-2.5 text-sm" required></div>
+                <div class="flex justify-end space-x-3 pt-3 border-t">
+                    <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 border text-gray-700 rounded-lg text-sm">Hủy</button>
+                    <button type="submit" class="px-5 py-2 bg-gray-900 text-white font-medium rounded-lg text-sm">Lưu Cài Đặt</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-900 text-white px-5 py-3 rounded-lg shadow-xl hidden transition-all z-50 flex items-center space-x-2 no-print">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-green-400"></i>
+        <span id="toast-msg">Thông báo</span>
+    </div>
+
+    <script>
+        const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxdWq4VKcswjirhneyX6G8A5hgiY1dUGMW3ol64X0OegTG8Qkt6i-FWKWw0joQtE3N_/exec";
+
+        const DEFAULT_CONFIG = {
+            upperOrg: "ĐẢNG ỦY PHƯỜNG QUY NHƠN TÂY",
+            unitName: "CHI BỘ 1",
+            location: "Quy Nhơn Tây",
+            secretary: "HỒ VĂN BẰNG",
+            treasurer: "HUỲNH THỊ MỸ OANH",
+            receiverReport: "Văn phòng Đảng ủy Phường Quy Nhơn Tây"
+        };
+
+        let config = JSON.parse(localStorage.getItem('party_fee_config')) || DEFAULT_CONFIG;
+        let transactions = JSON.parse(localStorage.getItem('party_fee_transactions')) || [];
+
+        window.onload = function() {
+            saveStateToStorage();
+            updateHeaderDisplay();
+            renderDashboard();
+            renderTransactionsTable();
+            updateStandardReportView();
+            initDefaultDateFilters();
+            updateDetailedReportView();
+            
+            // Tự động nạp dữ liệu từ Google Sheet khi vừa mở web
+            fetchDataFromGoogleSheet();
+        };
+
+        // ĐỌC GOOGLE SHEET BẰNG JSONP: tránh lỗi CORS/chuyển hướng của Apps Script.
+        function fetchDataFromGoogleSheet() {
+            showToast("Đang nạp dữ liệu từ Google Sheet...", "info");
+            const callbackName = "__sheetCallback_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+            const script = document.createElement("script");
+            let finished = false;
+            const cleanup = () => {
+                if (finished) return;
+                finished = true;
+                delete window[callbackName];
+                if (script.parentNode) script.parentNode.removeChild(script);
+                clearTimeout(timer);
+            };
+            const timer = setTimeout(() => {
+                cleanup();
+                console.error("Google Sheet JSONP timeout");
+                showToast("Hết thời gian kết nối Google Sheet. Kiểm tra URL và quyền triển khai.", "error");
+            }, 20000);
+
+            window[callbackName] = function(data) {
+                cleanup();
+                if (!data || data.result === "error") {
+                    showToast((data && data.message) || "Google Sheet trả về dữ liệu lỗi", "error");
+                    return;
+                }
+                if (!Array.isArray(data)) {
+                    showToast("Dữ liệu Google Sheet không đúng định dạng", "error");
+                    return;
+                }
+                // Chỉ thay dữ liệu cục bộ sau khi máy chủ trả về mảng hợp lệ.
+                transactions = data;
+                saveStateToStorage();
+                renderDashboard();
+                renderTransactionsTable();
+                updateStandardReportView();
+                updateDetailedReportView();
+                showToast("Đã nạp " + data.length + " giao dịch từ Google Sheet!");
+            };
+            script.onerror = function() {
+                cleanup();
+                showToast("Không thể tải dữ liệu. Kiểm tra URL Web App và quyền Anyone.", "error");
+            };
+            script.src = GOOGLE_SHEET_API_URL + "?callback=" + encodeURIComponent(callbackName) + "&t=" + Date.now();
+            document.head.appendChild(script);
+        }
+
+        // Gửi thao tác qua form POST ẩn. Apps Script phản hồi bằng postMessage.
+        function sendGoogleSheetAction(action, transaction) {
+            return new Promise((resolve, reject) => {
+                let iframe = document.getElementById("google-sheet-sync-frame");
+                if (!iframe) {
+                    iframe = document.createElement("iframe");
+                    iframe.name = "google-sheet-sync-frame";
+                    iframe.id = "google-sheet-sync-frame";
+                    iframe.style.display = "none";
+                    document.body.appendChild(iframe);
+                }
+                const nonce = "sync-" + Date.now() + "-" + Math.floor(Math.random() * 1000000000);
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = GOOGLE_SHEET_API_URL;
+                form.target = iframe.name;
+                form.style.display = "none";
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "postData";
+                input.value = JSON.stringify({ action: action, transaction: transaction || {}, nonce: nonce });
+                form.appendChild(input);
+                document.body.appendChild(form);
+
+                let settled = false;
+                const finish = (err, result) => {
+                    if (settled) return;
+                    settled = true;
+                    window.removeEventListener("message", onMessage);
+                    clearTimeout(timer);
+                    form.remove();
+                    if (err) reject(err); else resolve(result);
+                };
+                const onMessage = event => {
+                    const result = event.data;
+                    if (!result || result.channel !== "PARTY_FEE_SHEET_SYNC" || result.nonce !== nonce) return;
+                    if (result.result === "success") finish(null, result);
+                    else finish(new Error(result.message || "Google Sheet không ghi được dữ liệu"));
+                };
+                window.addEventListener("message", onMessage);
+                const timer = setTimeout(() => finish(new Error("Không nhận được xác nhận từ Google Sheet sau 25 giây")), 25000);
+                form.submit();
+            });
+        }
+
+        function refreshViewsAfterSync() {
+            saveStateToStorage();
+            renderDashboard();
+            renderTransactionsTable();
+            updateStandardReportView();
+            updateDetailedReportView();
+        }
+
+        function initDefaultDateFilters() {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+            document.getElementById('detail-from-date').value = firstDay;
+            document.getElementById('detail-to-date').value = lastDay;
+        }
+
+        function saveStateToStorage() {
+            localStorage.setItem('party_fee_config', JSON.stringify(config));
+            localStorage.setItem('party_fee_transactions', JSON.stringify(transactions));
+        }
+
+        function updateHeaderDisplay() {
+            document.getElementById('header-unit-display').textContent = `${config.upperOrg} - ${config.unitName}`;
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-white', 'text-party-red');
+                el.classList.add('text-white');
+            });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`btn-tab-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white', 'text-party-red');
+                activeBtn.classList.remove('text-white');
+            }
+            if (tabName === 'dashboard') renderDashboard();
+            if (tabName === 'transactions') renderTransactionsTable();
+            if (tabName === 'reports-standard') updateStandardReportView();
+            if (tabName === 'reports-detail') updateDetailedReportView();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+            toastMsg.textContent = message;
+            if (type === 'error') toastIcon.className = "fa-solid fa-circle-exclamation text-red-400";
+            else if (type === 'info') toastIcon.className = "fa-solid fa-circle-info text-blue-400";
+            else toastIcon.className = "fa-solid fa-circle-check text-green-400";
+
+            toast.classList.remove('hidden');
+            setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+        }
+
+        function formatMoney(num) { return new Intl.NumberFormat('vi-VN').format(num || 0); }
+
+        function numberToVietnameseWords(number) {
+            if (number === 0) return "Không đồng";
+            if (!number || isNaN(number)) return "";
+            const units = ["", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+            const scales = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
+
+            function readTriple(n) {
+                let hundred = Math.floor(n / 100);
+                let ten = Math.floor((n % 100) / 10);
+                let unit = n % 10;
+                let res = "";
+                if (hundred > 0 || ten > 0 || unit > 0) {
+                    if (hundred > 0) {
+                        res += units[hundred] + " trăm";
+                        if (ten === 0 && unit > 0) res += " lẻ";
+                    }
+                    if (ten > 0) {
+                        if (ten === 1) res += (res ? " " : "") + "mười";
+                        else res += (res ? " " : "") + units[ten] + " mươi";
+                    }
+                    if (unit > 0) {
+                        if (ten > 1 && unit === 1) res += " mốt";
+                        else if (ten > 0 && unit === 5) res += " lăm";
+                        else if (ten === 0 && unit === 5 && hundred > 0) res += " năm";
+                        else res += (res ? " " : "") + units[unit];
+                    }
+                }
+                return res;
+            }
+
+            let strNum = Math.floor(Math.abs(number)).toString();
+            let groups = [];
+            while (strNum.length > 0) {
+                groups.push(parseInt(strNum.slice(-3)));
+                strNum = strNum.slice(0, -3);
+            }
+            let resultWords = [];
+            for (let i = 0; i < groups.length; i++) {
+                let groupVal = groups[i];
+                if (groupVal > 0) {
+                    let groupStr = readTriple(groupVal);
+                    if (scales[i]) groupStr += " " + scales[i];
+                    resultWords.unshift(groupStr);
+                }
+            }
+            let outcome = resultWords.join(" ").trim();
+            outcome = outcome.charAt(0).toUpperCase() + outcome.slice(1) + " đồng";
+            return outcome;
+        }
+
+        function calculateTotals() {
+            let initial = 0, income = 0, expense = 0;
+            transactions.forEach(t => {
+                const amt = Number(t.amount) || 0;
+                if (t.type === 'INITIAL') initial += amt;
+                else if (t.type === 'INCOME') income += amt;
+                else if (t.type === 'EXPENSE' || t.type === 'RECEIPT') expense += amt;
+            });
+            const balance = initial + income - expense;
+            return { initial, income, expense, balance };
+        }
+
+        function renderDashboard() {
+            const totals = calculateTotals();
+            document.getElementById('stat-initial').textContent = formatMoney(totals.initial) + " VNĐ";
+            document.getElementById('stat-income').textContent = formatMoney(totals.income) + " VNĐ";
+            document.getElementById('stat-expense').textContent = formatMoney(totals.expense) + " VNĐ";
+            document.getElementById('stat-balance').textContent = formatMoney(totals.balance) + " VNĐ";
+
+            const recent = [...transactions].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+            const tbody = document.getElementById('dashboard-recent-table');
+            if (recent.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-400">Chưa có giao dịch nào. Bấm nút NẠP DATA TỪ GOOGLE SHEET để lấy dữ liệu.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = recent.map(t => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-3 font-semibold text-gray-700">${t.voucherNo || '-'}</td>
+                    <td class="px-4 py-3">${formatDateVN(t.date)}</td>
+                    <td class="px-4 py-3">${getVoucherBadge(t.type)}</td>
+                    <td class="px-4 py-3 font-medium text-gray-900">${t.person}</td>
+                    <td class="px-4 py-3 truncate max-w-xs" title="${t.reason}">${t.reason}</td>
+                    <td class="px-4 py-3 text-right font-bold ${t.type === 'INCOME' || t.type === 'INITIAL' ? 'text-emerald-600' : 'text-red-600'}">
+                        ${t.type === 'INCOME' || t.type === 'INITIAL' ? '+' : '-'}${formatMoney(t.amount)}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        ${t.imageUrl ? `<a href="${t.imageUrl}" target="_blank" class="text-party-red font-semibold hover:underline text-xs"><i class="fa-solid fa-image mr-1"></i> Xem ảnh</a>` : '<span class="text-gray-300 text-xs">Không có</span>'}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="previewVoucher('${t.id}')" class="text-blue-600 hover:text-blue-800 font-semibold text-xs border border-blue-200 bg-blue-50 px-2.5 py-1 rounded hover:bg-blue-100"><i class="fa-solid fa-print mr-1"></i> In Mẫu</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getVoucherBadge(type) {
+            switch(type) {
+                case 'INCOME': return `<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Phiếu Thu</span>`;
+                case 'EXPENSE': return `<span class="bg-red-100 text-red-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Phiếu Chi</span>`;
+                case 'RECEIPT': return `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Giấy Biên Nhận</span>`;
+                case 'INITIAL': return `<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Tồn Ban Đầu</span>`;
+                default: return '';
+            }
+        }
+
+        function formatDateVN(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function renderTransactionsTable(list = transactions) {
+            const tbody = document.getElementById('full-transactions-table');
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-gray-400">Không có giao dịch nào</td></tr>`;
+                return;
+            }
+            const sorted = [...list].sort((a,b) => new Date(b.date) - new Date(a.date));
+            tbody.innerHTML = sorted.map((t, index) => `
+                <tr class="hover:bg-gray-50 transition border-b">
+                    <td class="px-4 py-3 text-gray-400 font-mono text-xs">${index + 1}</td>
+                    <td class="px-4 py-3 font-semibold text-gray-800">${t.voucherNo || '-'}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">${formatDateVN(t.date)}</td>
+                    <td class="px-4 py-3">${getVoucherBadge(t.type)}</td>
+                    <td class="px-4 py-3 font-medium text-gray-900">${t.person}</td>
+                    <td class="px-4 py-3 text-gray-500">${t.address || '-'}</td>
+                    <td class="px-4 py-3 max-w-xs truncate" title="${t.reason}">${t.reason}</td>
+                    <td class="px-4 py-3 text-right font-bold whitespace-nowrap ${t.type === 'INCOME' || t.type === 'INITIAL' ? 'text-emerald-600' : 'text-red-600'}">${formatMoney(t.amount)}</td>
+                    <td class="px-4 py-3 text-center">${t.imageUrl ? `<a href="${t.imageUrl}" target="_blank" class="text-party-red font-semibold hover:underline text-xs"><i class="fa-solid fa-image"></i></a>` : '-'}</td>
+                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button onclick="previewVoucher('${t.id}')" class="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50"><i class="fa-solid fa-print"></i></button>
+                            <button onclick="editTransaction('${t.id}')" class="text-amber-600 hover:text-amber-800 p-1.5 rounded hover:bg-amber-50"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteTransaction('${t.id}')" class="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTransactions() {
+            const search = document.getElementById('search-input').value.toLowerCase().trim();
+            const typeFilter = document.getElementById('filter-type').value;
+            const monthFilter = document.getElementById('filter-month').value;
+            const filtered = transactions.filter(t => {
+                const matchesSearch = t.person.toLowerCase().includes(search) || t.reason.toLowerCase().includes(search) || (t.voucherNo && t.voucherNo.toLowerCase().includes(search));
+                const matchesType = (typeFilter === 'ALL') || (t.type === typeFilter);
+                let matchesMonth = true;
+                if (monthFilter) matchesMonth = t.date.startsWith(monthFilter);
+                return matchesSearch && matchesType && matchesMonth;
+            });
+            renderTransactionsTable(filtered);
+        }
+
+        function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-type').value = 'ALL';
+            document.getElementById('filter-month').value = '';
+            renderTransactionsTable(transactions);
+        }
+
+        function openTransactionModal(type = 'INCOME') {
+            document.getElementById('form-transaction').reset();
+            document.getElementById('tx-id').value = '';
+            document.getElementById('tx-type').value = type;
+            document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('tx-image-base64').value = '';
+            document.getElementById('image-preview-container').classList.add('hidden');
+            document.getElementById('modal-title').textContent = "Thêm Giao Dịch Mới";
+            onTypeChange();
+            updateWordsPreview();
+            document.getElementById('modal-transaction').classList.remove('hidden');
+        }
+
+        function closeTransactionModal() { document.getElementById('modal-transaction').classList.add('hidden'); }
+
+        function onTypeChange() {
+            const type = document.getElementById('tx-type').value;
+            const lblPerson = document.getElementById('lbl-person');
+            if (type === 'INCOME') lblPerson.textContent = "Họ Tên Người Nộp Tiền *";
+            else if (type === 'EXPENSE') lblPerson.textContent = "Họ Tên Người Chi / Thu Tiền *";
+            else if (type === 'RECEIPT') lblPerson.textContent = "Họ Tên Người Nhận Tiền *";
+            else lblPerson.textContent = "Họ Tên Người Bàn Giao / Tồn *";
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Str = e.target.result;
+                document.getElementById('tx-image-base64').value = base64Str;
+                document.getElementById('tx-image-url').value = '';
+                document.getElementById('image-preview-thumb').src = base64Str;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearAttachedImage() {
+            document.getElementById('tx-image-base64').value = '';
+            document.getElementById('tx-image-url').value = '';
+            document.getElementById('tx-file-input').value = '';
+            document.getElementById('image-preview-container').classList.add('hidden');
+        }
+
+        function updateWordsPreview() {
+            const amt = parseFloat(document.getElementById('tx-amount').value) || 0;
+            document.getElementById('tx-words-preview').textContent = numberToVietnameseWords(amt);
+        }
+
+        async function saveTransaction(e) {
+            e.preventDefault();
+            const id = document.getElementById('tx-id').value;
+            const type = document.getElementById('tx-type').value;
+            const voucherNo = document.getElementById('tx-voucher-no').value.trim();
+            const date = document.getElementById('tx-date').value;
+            const amount = parseFloat(document.getElementById('tx-amount').value) || 0;
+            const person = document.getElementById('tx-person').value.trim();
+            const address = document.getElementById('tx-address').value.trim();
+            const reason = document.getElementById('tx-reason').value.trim();
+            const base64Img = document.getElementById('tx-image-base64').value;
+            const urlImg = document.getElementById('tx-image-url').value.trim();
+            const imageUrl = base64Img || urlImg;
+
+            const oldTx = id ? transactions.find(t => t.id === id) : null;
+            const newTx = {
+                id: id || ('tx-' + Date.now()),
+                sheetRow: oldTx && oldTx.sheetRow ? oldTx.sheetRow : null,
+                type,
+                voucherNo: voucherNo || String(transactions.length + 1).padStart(2, '0'),
+                date, amount, person, address, reason, imageUrl
+            };
+
+            if (!GOOGLE_SHEET_API_URL || !GOOGLE_SHEET_API_URL.includes('script.google.com')) {
+                showToast('Chưa cấu hình URL Google Apps Script', 'error');
+                return;
+            }
+            const submitButton = document.querySelector('#form-transaction button[type="submit"]');
+            if (submitButton) submitButton.disabled = true;
+            showToast('Đang lưu giao dịch lên Google Sheet...', 'info');
+            try {
+                const result = await sendGoogleSheetAction(id ? 'update' : 'add', newTx);
+                // Chỉ cập nhật local sau khi máy chủ xác nhận ghi thành công.
+                if (id) {
+                    const index = transactions.findIndex(t => t.id === id);
+                    if (index !== -1) transactions[index] = newTx;
+                } else {
+                    transactions.push(newTx);
+                }
+                closeTransactionModal();
+                refreshViewsAfterSync();
+                showToast(result.message || 'Đã lưu giao dịch lên Google Sheet!');
+                // Lấy lại sheetRow và dữ liệu chuẩn từ máy chủ.
+                setTimeout(fetchDataFromGoogleSheet, 500);
+            } catch (error) {
+                console.error('Lỗi đồng bộ giao dịch:', error);
+                showToast('Chưa lưu được lên Google Sheet: ' + error.message, 'error');
+            } finally {
+                if (submitButton) submitButton.disabled = false;
+            }
+        }
+
+        function editTransaction(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            document.getElementById('tx-id').value = tx.id;
+            document.getElementById('tx-type').value = tx.type;
+            document.getElementById('tx-voucher-no').value = tx.voucherNo || '';
+            document.getElementById('tx-date').value = tx.date;
+            document.getElementById('tx-amount').value = tx.amount;
+            document.getElementById('tx-person').value = tx.person;
+            document.getElementById('tx-address').value = tx.address || '';
+            document.getElementById('tx-reason').value = tx.reason;
+
+            if (tx.imageUrl) {
+                if (tx.imageUrl.startsWith('data:')) {
+                    document.getElementById('tx-image-base64').value = tx.imageUrl;
+                    document.getElementById('image-preview-thumb').src = tx.imageUrl;
+                    document.getElementById('image-preview-container').classList.remove('hidden');
+                } else {
+                    document.getElementById('tx-image-url').value = tx.imageUrl;
+                }
+            } else {
+                clearAttachedImage();
+            }
+
+            document.getElementById('modal-title').textContent = "Chỉnh Sửa Giao Dịch";
+            onTypeChange();
+            updateWordsPreview();
+            document.getElementById('modal-transaction').classList.remove('hidden');
+        }
+
+        async function deleteTransaction(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+            if (!confirm("Bạn có chắc chắn muốn xóa giao dịch này khỏi Google Sheet và WebApp?")) return;
+            try {
+                showToast("Đang xóa giao dịch trên Google Sheet...", "info");
+                const result = await sendGoogleSheetAction('delete', tx);
+                transactions = transactions.filter(t => t.id !== id);
+                refreshViewsAfterSync();
+                showToast(result.message || "Đã xóa giao dịch trên Google Sheet!");
+                setTimeout(fetchDataFromGoogleSheet, 500);
+            } catch (error) {
+                console.error('Lỗi xóa giao dịch:', error);
+                showToast('Không xóa được trên Google Sheet: ' + error.message, 'error');
+            }
+        }
+
+        function previewVoucher(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+            document.getElementById('voucher-preview-card').innerHTML = generateVoucherHTML(tx);
+            document.getElementById('modal-voucher-print').classList.remove('hidden');
+        }
+
+        function closeVoucherModal() { document.getElementById('modal-voucher-print').classList.add('hidden'); }
+
+        function generateVoucherHTML(tx) {
+            const d = new Date(tx.date || Date.now());
+            const dayStr = String(d.getDate()).padStart(2, '0');
+            const monthStr = String(d.getMonth() + 1).padStart(2, '0');
+            const yearStr = d.getFullYear();
+            const words = numberToVietnameseWords(tx.amount);
+            const formattedAmt = formatMoney(tx.amount);
+
+            let page1Html = "";
+            if (tx.type === 'INCOME' || tx.type === 'INITIAL') {
+                page1Html = `
+                    <div class="text-black leading-relaxed">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="text-center uppercase font-bold text-sm"><div>${config.upperOrg}</div><div class="text-base">${config.unitName}</div></div>
+                            <div class="text-right text-sm"><div>Số chứng từ: <span class="font-bold">${tx.voucherNo || '05'}</span></div></div>
+                        </div>
+                        <div class="text-center my-6"><h2 class="text-2xl font-bold tracking-wider">PHIẾU THU</h2><p class="italic text-sm mt-1">Ngày ${dayStr} tháng ${monthStr} năm ${yearStr}</p></div>
+                        <div class="space-y-3 text-base">
+                            <div class="flex"><span class="w-48">Họ tên người thu tiền:</span> <span class="font-bold uppercase">${tx.person}</span></div>
+                            <div class="flex"><span class="w-48">Địa chỉ:</span> <span>${tx.address || 'Chi ủy Chi bộ 1 phường Quy Nhơn Tây'}</span></div>
+                            <div class="flex"><span class="w-48">Nội dung:</span> <span class="flex-1">${tx.reason}</span></div>
+                            <div class="flex"><span class="w-48">Số tiền:</span> <span class="font-bold">${formattedAmt}</span></div>
+                            <div class="flex"><span class="w-48">Viết bằng chữ:</span> <span class="italic capitalize">${words}</span></div>
+                            <div class="flex"><span class="w-48">Kèm theo:</span> <span>................chứng từ gốc.</span></div>
+                            <div class="flex"><span class="w-48">Đã nhận đủ số tiền:</span> <span class="italic capitalize">${words}</span></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-8 text-center mt-12 pt-4">
+                            <div><div class="font-bold uppercase">T/M CHI ỦY CHI BỘ 1</div><div class="font-bold uppercase">BÍ THƯ</div><div class="h-24"></div><div class="font-bold uppercase">${config.secretary}</div></div>
+                            <div><div class="font-bold uppercase">THỦ QUỶ</div><div class="h-28"></div><div class="font-bold uppercase">${config.treasurer}</div></div>
+                        </div>
+                    </div>`;
+            } else if (tx.type === 'EXPENSE') {
+                page1Html = `
+                    <div class="text-black leading-relaxed">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="text-center uppercase font-bold text-sm"><div>${config.upperOrg}</div><div class="text-base">${config.unitName}</div></div>
+                            <div class="text-right text-sm"><div>Số chứng từ: <span class="font-bold">${tx.voucherNo || '05'}</span></div></div>
+                        </div>
+                        <div class="text-center my-6"><h2 class="text-2xl font-bold tracking-wider">PHIẾU CHI</h2><p class="italic text-sm mt-1">Ngày ${dayStr} tháng ${monthStr} năm ${yearStr}</p></div>
+                        <div class="space-y-3 text-base">
+                            <div class="flex"><span class="w-48">Họ tên người chi tiền:</span> <span class="font-bold uppercase">${tx.person}</span></div>
+                            <div class="flex"><span class="w-48">Địa chỉ:</span> <span>${tx.address || 'Chi ủy Chi bộ 1 phường Quy Nhơn Tây'}</span></div>
+                            <div class="flex"><span class="w-48">Nội dung:</span> <span class="flex-1">${tx.reason}</span></div>
+                            <div class="flex"><span class="w-48">Số tiền:</span> <span class="font-bold">${formattedAmt}</span></div>
+                            <div class="flex"><span class="w-48">Viết bằng chữ:</span> <span class="italic capitalize">${words}</span></div>
+                            <div class="flex"><span class="w-48">Kèm theo:</span> <span>${tx.imageUrl ? '1' : '................'} chứng từ gốc.</span></div>
+                            <div class="flex"><span class="w-48">Đã chi đủ số tiền:</span> <span class="italic capitalize">${words}</span></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-8 text-center mt-12 pt-4">
+                            <div><div class="font-bold uppercase">T/M CHI ỦY CHI BỘ 1</div><div class="font-bold uppercase">BÍ THƯ</div><div class="h-24"></div><div class="font-bold uppercase">${config.secretary}</div></div>
+                            <div><div class="font-bold uppercase">THỦ QUỶ</div><div class="h-28"></div><div class="font-bold uppercase">${config.treasurer}</div></div>
+                        </div>
+                    </div>`;
+            } else if (tx.type === 'RECEIPT') {
+                page1Html = `
+                    <div class="text-black leading-relaxed">
+                        <div class="text-center uppercase font-bold text-sm mb-4"><div>${config.upperOrg}</div><div class="text-base">${config.unitName}</div></div>
+                        <div class="text-center my-6"><h2 class="text-2xl font-bold tracking-wider">GIẤY BIÊN NHẬN TIỀN</h2><p class="italic text-sm mt-1">Ngày ${dayStr} tháng ${monthStr} năm ${yearStr}</p></div>
+                        <div class="space-y-3 text-base">
+                            <div class="flex"><span class="w-48">Họ tên người nhận tiền:</span> <span class="font-bold uppercase">${tx.person}</span></div>
+                            <div class="flex"><span class="w-48">Địa chỉ:</span> <span>${tx.address || 'Chi ủy Chi bộ 1 phường Quy Nhơn Tây'}</span></div>
+                            <div class="flex"><span class="w-48">Nội dung:</span> <span class="flex-1">${tx.reason}</span></div>
+                            <div class="flex"><span class="w-48">Số tiền:</span> <span class="font-bold">${formattedAmt}</span></div>
+                            <div class="flex"><span class="w-48">Viết bằng chữ:</span> <span class="italic capitalize">${words}</span></div>
+                            <div class="flex"><span class="w-48">Kèm theo:</span> <span>................chứng từ gốc.</span></div>
+                            <div class="flex"><span class="w-48">Đã nhận đủ số tiền mặt:</span> <span class="italic capitalize">${words}</span></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-8 text-center mt-12 pt-4">
+                            <div><div class="font-bold uppercase">T/M CHI ỦY CHI BỘ 1</div><div class="font-bold uppercase">THỦ QUỶ</div><div class="h-24"></div><div class="font-bold uppercase">${config.treasurer}</div></div>
+                            <div><div class="font-bold uppercase">NGƯỜI NHẬN TIỀN</div><div class="h-28"></div><div class="font-bold uppercase">${tx.person}</div></div>
+                        </div>
+                    </div>`;
+            }
+
+            if (tx.imageUrl) {
+                page1Html += `
+                    <div class="page-break pt-8 mt-8 border-t-2 border-dashed border-gray-400">
+                        <div class="text-center font-bold text-lg uppercase mb-4 pb-2 border-b-2 border-black">TRANG 2: ĐÍNH KÈM CHỨNG TỪ GỐC (ẢNH CHỤP) - SỐ CT: ${tx.voucherNo || ''}</div>
+                        <div class="flex justify-center items-center h-[210mm] bg-gray-50 border border-gray-300 p-2"><img src="${tx.imageUrl}" alt="Chứng từ đính kèm" class="max-w-full max-h-full object-contain"></div>
+                    </div>`;
+            }
+            return page1Html;
+        }
+
+        function updateStandardReportView() {
+            const val = document.getElementById('report-period-month').value || "2026-08";
+            const [y, m] = val.split('-');
+            const periodText = `Tháng ${m} năm ${y}`;
+            const filteredTxs = transactions.filter(t => t.date && t.date.startsWith(val));
+
+            let totalMembers = 100, totalIncomePeriod = 0, totalIncomeYTD = 0;
+            transactions.forEach(t => { if (t.type === 'INCOME') totalIncomeYTD += t.amount; });
+            filteredTxs.forEach(t => { if (t.type === 'INCOME') totalIncomePeriod += t.amount; });
+
+            let keptPeriodBranch = Math.round(totalIncomePeriod * 0.7);
+            let keptYTDBranch = Math.round(totalIncomeYTD * 0.7);
+            let submittedPeriodUpper = Math.round(totalIncomePeriod * 0.3);
+            let submittedYTDUpper = Math.round(totalIncomeYTD * 0.3);
+
+            const reportHtml = `
+                <div class="text-black">
+                    <div class="flex justify-between items-start mb-2 text-sm">
+                        <div>
+                            <div>Đơn vị báo cáo: <span class="font-bold uppercase editable-cell" contenteditable="true">${config.unitName}</span></div>
+                            <div>Đơn vị nhận báo cáo: <span class="font-bold editable-cell" contenteditable="true">${config.receiverReport}</span></div>
+                        </div>
+                        <div class="text-center font-bold uppercase text-sm">ĐẢNG CỘNG SẢN VIỆT NAM</div>
+                    </div>
+                    <div class="text-center my-4"><h2 class="text-xl font-bold uppercase tracking-wide">BÁO CÁO THU, NỘP ĐẢNG PHÍ</h2><p class="italic text-sm mt-0.5 editable-cell inline-block" contenteditable="true">${periodText}</p></div>
+                    <table class="w-full report-table text-left border-collapse border border-black my-4">
+                        <thead>
+                            <tr class="text-center font-bold bg-gray-50">
+                                <th rowspan="2" class="w-10">TT</th><th rowspan="2" class="w-72">Chỉ tiêu</th><th rowspan="2" class="w-16">Đơn vị</th><th rowspan="2" class="w-16">Mã số</th>
+                                <th>Đảng bộ Xã phường thị trấn</th><th>Đảng bộ Doanh nghiệp</th><th>Đảng bộ khác</th><th>Cộng</th><th rowspan="2" class="w-16">Ghi chú</th>
+                            </tr>
+                            <tr class="text-center font-bold bg-gray-50"><th class="w-16">1</th><th class="w-16">2</th><th class="w-16">3</th><th class="w-24">4=1+2+3</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr class="font-bold"><td class="text-center">I</td><td>Tổng số đảng viên đến cuối kỳ báo cáo</td><td class="text-center font-normal">Người</td><td class="text-center">01</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">${totalMembers}</td><td class="text-center editable-cell" contenteditable="true">${totalMembers}</td><td></td></tr>
+                            <tr class="font-bold"><td class="text-center">II</td><td>Đảng phí đã thu được từ chi bộ của cấp báo cáo</td><td class="text-center font-normal">Đồng</td><td></td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td><td></td></tr>
+                            <tr><td class="text-center font-bold">1</td><td>Kỳ báo cáo</td><td class="text-center">Đồng</td><td class="text-center">02</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td><td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(totalIncomePeriod)}</td><td></td></tr>
+                            <tr><td class="text-center font-bold">2</td><td>Từ đầu năm đến cuối kỳ báo cáo</td><td class="text-center">Đồng</td><td class="text-center">03</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(totalIncomeYTD)}</td><td class="text-right font-bold editable-cell" contenteditable="true">${formatMoney(totalIncomeYTD)}</td><td></td></tr>
+                            <tr class="font-bold"><td class="text-center">III</td><td>Đảng phí trích giữ lại ở các cấp (70%)</td><td class="text-center font-normal">Đồng</td><td></td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(keptPeriodBranch)}</td><td></td></tr>
+                            <tr class="font-bold"><td class="text-center">IV</td><td>Đảng phí nộp cấp trên của cấp báo cáo (30%)</td><td class="text-center font-normal">Đồng</td><td></td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-center editable-cell" contenteditable="true">0</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(submittedPeriodUpper)}</td><td class="text-right editable-cell" contenteditable="true">${formatMoney(submittedPeriodUpper)}</td><td></td></tr>
+                        </tbody>
+                    </table>
+                    <div class="flex justify-between items-start mt-8 pt-2">
+                        <div class="text-center w-64"><div class="font-bold">Người lập</div><div class="italic text-xs">(Ký, họ tên)</div><div class="h-20"></div><div class="font-bold uppercase editable-cell" contenteditable="true">${config.treasurer}</div></div>
+                        <div class="text-center w-64"><div class="italic text-xs mb-1 editable-cell" contenteditable="true">${config.location}, ngày 05 tháng ${m} năm ${y}</div><div class="font-bold">T/M Cấp ủy</div><div class="italic text-xs">(Ký, họ tên)</div><div class="h-20"></div><div class="font-bold uppercase editable-cell" contenteditable="true">${config.secretary}</div></div>
+                    </div>
+                </div>`;
+            document.getElementById('standard-report-preview-area').innerHTML = reportHtml;
+        }
+
+        function updateDetailedReportView() {
+            const fromDate = document.getElementById('detail-from-date').value;
+            const toDate = document.getElementById('detail-to-date').value;
+            const sorted = [...transactions].sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            let initialBalance = 0, periodIncome = 0, periodExpense = 0, runningBalance = 0;
+            const filtered = [];
+
+            sorted.forEach(t => {
+                const amt = Number(t.amount) || 0;
+                const isBefore = fromDate && t.date < fromDate;
+                const isAfter = toDate && t.date > toDate;
+                if (isBefore) {
+                    if (t.type === 'INITIAL' || t.type === 'INCOME') initialBalance += amt;
+                    else initialBalance -= amt;
+                } else if (!isAfter) {
+                    filtered.push(t);
+                }
+            });
+
+            runningBalance = initialBalance;
+            let tableRows = `<tr class="font-bold bg-gray-50"><td class="text-center">-</td><td class="text-center">-</td><td class="font-bold" colspan="3">SỐ DƯ TỒN ĐẦU KỲ MANG SANG</td><td class="text-right">-</td><td class="text-right">-</td><td class="text-right font-bold text-blue-700">${formatMoney(initialBalance)}</td></tr>`;
+
+            if (filtered.length === 0) {
+                tableRows += `<tr><td colspan="8" class="text-center py-4 text-gray-500 italic">Không có phát sinh giao dịch trong khoảng thời gian chọn</td></tr>`;
+            } else {
+                filtered.forEach((t, i) => {
+                    const amt = Number(t.amount) || 0;
+                    let inc = 0, exp = 0;
+                    if (t.type === 'INITIAL' || t.type === 'INCOME') {
+                        inc = amt; periodIncome += amt; runningBalance += amt;
+                    } else {
+                        exp = amt; periodExpense += amt; runningBalance -= amt;
+                    }
+                    tableRows += `
+                        <tr>
+                            <td class="text-center">${i + 1}</td>
+                            <td class="text-center whitespace-nowrap">${formatDateVN(t.date)}</td>
+                            <td class="text-center font-bold">${t.voucherNo || '-'}</td>
+                            <td class="font-medium">${t.person}</td>
+                            <td>${t.reason}</td>
+                            <td class="text-right ${inc ? 'text-emerald-700 font-semibold' : 'text-gray-400'}">${inc ? formatMoney(inc) : '-'}</td>
+                            <td class="text-right ${exp ? 'text-red-700 font-semibold' : 'text-gray-400'}">${exp ? formatMoney(exp) : '-'}</td>
+                            <td class="text-right font-bold">${formatMoney(runningBalance)}</td>
+                        </tr>`;
+                });
+            }
+
+            const finalBalance = initialBalance + periodIncome - periodExpense;
+            const now = new Date();
+            const dateStrStr = `${config.location}, ngày ${String(now.getDate()).padStart(2,'0')} tháng ${String(now.getMonth()+1).padStart(2,'0')} năm ${now.getFullYear()}`;
+
+            const detailedHtml = `
+                <div class="text-black">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="text-center uppercase font-bold text-sm"><div>${config.upperOrg}</div><div class="text-base">${config.unitName}</div></div>
+                        <div class="text-right text-sm italic"><div>Mẫu Sổ Chi Tiết Quỹ Đảng Phí</div></div>
+                    </div>
+                    <div class="text-center my-4"><h2 class="text-xl font-bold uppercase tracking-wide">BÁO CÁO CHI TIẾT THU - CHI - TỒN QUỸ ĐẢNG PHÍ</h2><p class="italic text-sm mt-0.5">Từ ngày ${formatDateVN(fromDate)} đến ngày ${formatDateVN(toDate)}</p></div>
+                    <table class="w-full report-table text-left border-collapse border border-black my-4">
+                        <thead>
+                            <tr class="text-center font-bold bg-gray-100">
+                                <th class="w-10">STT</th><th class="w-24">Ngày</th><th class="w-16">Số CT</th><th class="w-40">Họ và Tên</th>
+                                <th>Nội Dung Chi Tiết</th><th class="w-28 text-right">Thu (Đồng)</th><th class="w-28 text-right">Chi (Đồng)</th><th class="w-32 text-right">Tồn Quỹ (Đồng)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                        <tfoot>
+                            <tr class="font-bold bg-amber-50">
+                                <td colspan="5" class="text-center uppercase">TỔNG CỘNG PHÁT SINH TRONG KỲ</td>
+                                <td class="text-right text-emerald-800 font-bold">${formatMoney(periodIncome)}</td>
+                                <td class="text-right text-red-800 font-bold">${formatMoney(periodExpense)}</td>
+                                <td class="text-right text-amber-900 font-black">${formatMoney(finalBalance)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="my-4 bg-gray-50 p-3 border border-black text-sm space-y-1">
+                        <div class="font-bold uppercase underline mb-1">TỔNG HỢP QUỸ ĐẢNG PHÍ:</div>
+                        <div class="flex justify-between"><span>1. Số dư tồn quỹ đầu kỳ:</span> <span class="font-bold">${formatMoney(initialBalance)} VNĐ</span></div>
+                        <div class="flex justify-between"><span>2. Tổng thu trong kỳ:</span> <span class="font-bold text-emerald-700">+ ${formatMoney(periodIncome)} VNĐ</span></div>
+                        <div class="flex justify-between"><span>3. Tổng chi trong kỳ:</span> <span class="font-bold text-red-700">- ${formatMoney(periodExpense)} VNĐ</span></div>
+                        <div class="flex justify-between pt-1 border-t border-gray-300 font-bold text-base"><span>4. Số dư tồn quỹ cuối kỳ:</span> <span class="text-amber-800">${formatMoney(finalBalance)} VNĐ</span></div>
+                        <div class="italic text-xs pt-1">Bằng chữ: ${numberToVietnameseWords(finalBalance)}</div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 text-center mt-8 pt-2">
+                        <div><div class="font-bold">Người lập báo cáo</div><div class="italic text-xs">(Ký, họ tên)</div><div class="h-20"></div><div class="font-bold uppercase">${config.treasurer}</div></div>
+                        <div><div class="font-bold uppercase">THỦ QUỶ</div><div class="italic text-xs">(Ký, họ tên)</div><div class="h-20"></div><div class="font-bold uppercase">${config.treasurer}</div></div>
+                        <div><div class="italic text-xs mb-1">${dateStrStr}</div><div class="font-bold uppercase">T/M CHI ỦY CHI BỘ 1</div><div class="font-bold uppercase">BÍ THƯ</div><div class="h-16"></div><div class="font-bold uppercase">${config.secretary}</div></div>
+                    </div>
+                </div>`;
+            document.getElementById('detailed-report-preview-area').innerHTML = detailedHtml;
+        }
+
+        function openSettingsModal() {
+            document.getElementById('cfg-upper-org').value = config.upperOrg;
+            document.getElementById('cfg-unit-name').value = config.unitName;
+            document.getElementById('cfg-location').value = config.location;
+            document.getElementById('cfg-secretary').value = config.secretary;
+            document.getElementById('cfg-treasurer').value = config.treasurer;
+            document.getElementById('cfg-receiver-report').value = config.receiverReport;
+            document.getElementById('modal-settings').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() { document.getElementById('modal-settings').classList.add('hidden'); }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            config.upperOrg = document.getElementById('cfg-upper-org').value.trim();
+            config.unitName = document.getElementById('cfg-unit-name').value.trim();
+            config.location = document.getElementById('cfg-location').value.trim();
+            config.secretary = document.getElementById('cfg-secretary').value.trim();
+            config.treasurer = document.getElementById('cfg-treasurer').value.trim();
+            config.receiverReport = document.getElementById('cfg-receiver-report').value.trim();
+            saveStateToStorage();
+            closeSettingsModal();
+            updateHeaderDisplay();
+            updateStandardReportView();
+            updateDetailedReportView();
+            showToast("Đã lưu cài đặt!");
+        }
+
+        function printStandardReport() {
+            document.getElementById('print-section').innerHTML = document.getElementById('standard-report-preview-area').innerHTML;
+            window.print();
+        }
+
+        function printDetailedReport() {
+            document.getElementById('print-section').innerHTML = document.getElementById('detailed-report-preview-area').innerHTML;
+            window.print();
+        }
+
+        function printVoucherDocument() {
+            document.getElementById('print-section').innerHTML = document.getElementById('voucher-preview-card').innerHTML;
+            window.print();
+        }
+
+        function downloadSelfHtmlFile() {
+            const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'quan_ly_dang_phi.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Đã tải file HTML về máy!");
+        }
+    </script>
+</body>
+</html>
